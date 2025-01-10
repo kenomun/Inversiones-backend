@@ -236,9 +236,8 @@ const deleteUser = async (req, res) => {
   const userId = req.params.userId;
   try {
     const user = await prisma.user.findUnique({
-      where: { id: "99b5362b-17fc-422e-b7e5-6978e881c7d1" },
+      where: { id: userId },
     });
-    console.log("USERID", user);
 
     if (!user) {
       return error404(res, "Usuario no encontrado");
