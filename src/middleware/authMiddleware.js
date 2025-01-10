@@ -1,23 +1,22 @@
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = process.env; // Cargar la clave secreta del .env
+const { denegateeAccess, permissonDenegate } = require("../helpers/http");
+const { JWT_SECRET } = process.env;
 
 // Middleware para verificar el token
 const verifyToken = (req, res, next) => {
-  const token = req.headers["authorization"]?.split(" ")[1]; // Extrae el token del header
+  const token = req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
-    return res
-      .status(403)
-      .json({ error: "Acceso denegado. Token no proporcionado." });
+    return permissonDenegate(res, "Acceso denegado. Token no proporcionado.");
   }
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(401).json({ error: "Token no válido." });
+      return denegateeAccess(res, "Token no válido.");
     }
 
-    req.user = decoded; // Si el token es válido, guarda el contenido en req.user
-    next(); // Llama al siguiente middleware o controlador
+    req.user = decoded;
+    next();
   });
 };
 
