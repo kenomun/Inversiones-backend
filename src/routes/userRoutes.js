@@ -9,7 +9,7 @@ const verifyRole = require("../middleware/verifyRole");
  * /users:
  *   post:
  *     tags:
- *       - Users
+ *       - Usuarios
  *     summary: Registrar un nuevo usuario
  *     description: Permite registrar un nuevo usuario en el sistema.
  *     requestBody:
@@ -90,7 +90,7 @@ router.post("/users", userController.registerUser);
  * /users:
  *   get:
  *     tags:
- *       - Users
+ *       - Usuarios
  *     summary: Obtiene todos los usuarios registrados
  *     description: Devuelve una lista de todos los usuarios. Requiere autenticación y roles específicos.
  *     security:
@@ -153,7 +153,7 @@ router.get("/users", authMiddleware, verifyRole(["superAdmin", "Admin"]), userCo
  *     summary: Obtener todos los usuarios activos
  *     description: Devuelve una lista de todos los usuarios activos en el sistema, incluyendo información básica y el rol asociado.
  *     tags:
- *       - Users
+ *       - Usuarios
  *     security:
  *       - BearerAuth: []
  *     responses:
@@ -233,7 +233,7 @@ router.get("/usersActive", authMiddleware, userController.getAllUserActive);
  *     summary: Obtener todos los usuarios inactivos
  *     description: Devuelve una lista de todos los usuarios inactivos en el sistema, incluyendo información básica y el rol asociado.
  *     tags:
- *       - Users
+ *       - Usuarios
  *     security:
  *       - BearerAuth: []
  *     responses:
@@ -314,7 +314,7 @@ router.get("/usersInactive", authMiddleware, userController.getAllUserInactive);
  *     summary: Obtener un usuario por su ID
  *     description: Devuelve la información de un usuario específico utilizando su ID.
  *     tags:
- *       - Users
+ *       - Usuarios
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -396,7 +396,7 @@ router.get("/user/:userId", authMiddleware, userController.getUserById);
  *     summary: Actualizar un usuario por su ID
  *     description: Permite actualizar uno o más campos de un usuario específico por su ID.
  *     tags:
- *       - Users
+ *       - Usuarios
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -512,7 +512,7 @@ router.put("/user/:userId", authMiddleware, userController.updateUserById);
  *     summary: Marcar un usuario como inactivo
  *     description: Marca un usuario como inactivo en lugar de eliminarlo físicamente de la base de datos.
  *     tags:
- *       - Users
+ *       - Usuarios
  *     security:
  *       - BearerAuth: []
  *     parameters:
