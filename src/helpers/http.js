@@ -42,7 +42,7 @@ const denegateeAccess = (res, msg, result, code = 401) => {
   });
 };
 
-const permissonDegate = (res, msg, code = 403) => {
+const permissonDenegate = (res, msg, code = 403) => {
   return res.status(code).json({
     status: 403,
     error: true,
@@ -82,7 +82,7 @@ module.exports = {
   internalError,
   denegateeAccess,
   sendOk204,
-  permissonDegate,
+  permissonDenegate,
   error404,
   error409,
 };
