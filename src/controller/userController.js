@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const bcrypt = require("bcrypt");
-const { sendOk, badRequest, internalError } = require("../helpers/http");
+const { sendOk, badRequest, internalError, error404 } = require("../helpers/http");
 
 // Crear un nuevo usuario
 const registerUser = async (req, res) => {
@@ -146,8 +146,13 @@ const getAllUserInactive = async (req, res) => {
 
 //Buscar Usuario por Id
 const getUserById = async (req, res) => {
+  const userId = req.params.userId;
   try {
-    const userId = req.params.userId;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(categoryId)) {
+      return badRequest(res, "El ID de la categoría no tiene un formato válido.");
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -167,7 +172,7 @@ const getUserById = async (req, res) => {
     });
 
     if (user.length === 0) {
-      return error404(res, "Usuario encontrado.", user);
+      return error404(res, "Usuario no encontrado.", user);
     }
     return sendOk(res, "Usuario encontrado.", user);
   } catch (error) {
@@ -177,8 +182,12 @@ const getUserById = async (req, res) => {
 
 // Actualizar usuario.}
 const updateUserById = async (req, res) => {
+  const userId = req.params.userId;
   try {
-    const userId = req.params.userId;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(categoryId)) {
+      return badRequest(res, "El ID de la categoría no tiene un formato válido.");
+    }
 
     // Validar si el cuerpo de la solicitud tiene al menos un campo para actualizar
     const { name, email, password, roleId, wallet } = req.body;
@@ -235,6 +244,11 @@ const updateUserById = async (req, res) => {
 const deleteUser = async (req, res) => {
   const userId = req.params.userId;
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(categoryId)) {
+      return badRequest(res, "El ID de la categoría no tiene un formato válido.");
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });

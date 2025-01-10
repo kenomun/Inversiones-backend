@@ -5,6 +5,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerDocs = require("./src/config/swagger");
 const loginRoutes = require("./src/routes/loginRoutes");
 const userRoutes = require("./src/routes/userRoutes");
+const categoryRoutes = require("./src/routes/categoryRoutes");
 
 // Inicializa la app
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/auth", loginRoutes);
 
 // Rutas protegidas (requieren JWT)
 app.use("/api", userRoutes);
+app.use("/api", categoryRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
