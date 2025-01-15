@@ -136,20 +136,33 @@ const updateProject = async (req, res) => {
   const { title, description, capacity, minInvestment, duration, returnType, fixedReturn, categoryId, status } = req.body;
 
   try {
-    // Verificar que el ID esté presente
+    // Validar el formato del ID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(projectId)) {
-      return badRequest(res, "El ID de la categoría no tiene un formato válido.");
+      return badRequest(res, "El ID del proyecto no tiene un formato válido.");
     }
 
+    // Buscar el proyecto existente
     const existingProject = await prisma.project.findUnique({
       where: { id: projectId },
     });
 
     if (!existingProject) {
-      return res.status(404).json({ error: "Proyecto no encontrado." });
+      return error404(res, "Proyecto no encontrado.");
     }
-    // Actualizar solo los campos proporcionados
+
+    // Validar que la capacidad no sea menor al monto ya recaudado
+    if (capacity !== undefined && capacity < existingProject.raisedAmount) {
+      return badRequest(res, `La capacidad no puede ser menor al monto ya recaudado (${existingProject.raisedAmount}).`);
+    }
+
+    // Validar el estado proporcionado
+    const validStatuses = ["open", "closed", "completed"];
+    if (status && !validStatuses.includes(status)) {
+      return badRequest(res, `Estado inválido. Los estados permitidos son: ${validStatuses.join(", ")}.`);
+    }
+
+    // Actualizar el proyecto
     const updatedProject = await prisma.project.update({
       where: { id: projectId },
       data: {
@@ -164,9 +177,19 @@ const updateProject = async (req, res) => {
         ...(status && { status }),
       },
     });
+
+    // Recalcular el estado del proyecto si se actualizó la capacidad
+    if (updatedProject.raisedAmount >= updatedProject.capacity) {
+      await prisma.project.update({
+        where: { id: projectId },
+        data: { status: "closed" },
+      });
+    }
+
     // Respuesta exitosa
     return sendOk(res, "Proyecto actualizado con éxito.", updatedProject);
   } catch (error) {
+    console.error(error);
     return internalError(res, "Ocurrió un error al actualizar el proyecto.");
   }
 };

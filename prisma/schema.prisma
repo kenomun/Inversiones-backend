@@ -76,12 +76,13 @@ model InvestmentHistory {
   id              String   @id @default(uuid())
   userId          String
   user            User     @relation(fields: [userId], references: [id])
-  projectId       String
-  project         Project  @relation(fields: [projectId], references: [id])
-  action          String   // 'investment' o 'withdrawal'
-  amount          Float    // Monto invertido o retirado
-  profitLoss      Float    // Ganancia o pérdida en la transacción
-  walletBalance   Float    // Saldo en la billetera después de la transacción
+  projectId       String?
+  project         Project? @relation(fields: [projectId], references: [id])
+  action          String
+  amount          Float
+  profitLoss      Float
+  returnType      String?
+  walletBalance   Float
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

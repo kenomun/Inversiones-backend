@@ -7,6 +7,8 @@ const loginRoutes = require("./src/routes/loginRoutes");
 const userRoutes = require("./src/routes/userRoutes");
 const categoryRoutes = require("./src/routes/categoryRoutes");
 const projectRoutes = require("./src/routes/projectRoutes");
+const addFoundRountes = require("./src/routes/addFoundRountes");
+const investmentRoutes = require("./src/routes/investmentRoutes");
 
 // Inicializa la app
 const app = express();
@@ -29,6 +31,8 @@ app.use("/api/auth", loginRoutes);
 app.use("/api", userRoutes);
 app.use("/api", categoryRoutes);
 app.use("/api", projectRoutes);
+app.use("/api", addFoundRountes);
+app.use("/api", investmentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
