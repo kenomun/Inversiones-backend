@@ -149,7 +149,7 @@ const getUserById = async (req, res) => {
   const userId = req.params.userId;
   try {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(categoryId)) {
+    if (!uuidRegex.test(userId)) {
       return badRequest(res, "El ID de la categoría no tiene un formato válido.");
     }
 

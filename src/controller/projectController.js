@@ -3,18 +3,45 @@ const prisma = new PrismaClient();
 const { sendOk, badRequest, internalError, error404 } = require("../helpers/http");
 
 //Crear proyecto
-const createproject = async (req, res) => {
-  const { title, description, capacity, minInvestment, duration, returnType, fixedReturn, categoryId } = req.body;
+const createProject = async (req, res) => {
+  const {
+    title,
+    description,
+    capacity,
+    minInvestment,
+    duration,
+    returnType,
+    fixedReturn,
+    categoryId,
+    withdrawalFee, // Se agrega el nuevo campo de comisión por retiro
+  } = req.body;
+
   try {
-    if (!title || !description || !capacity || !minInvestment || !duration || !returnType || !categoryId) {
+    // Validar que los campos requeridos estén presentes
+    if (
+      !title ||
+      !description ||
+      !capacity ||
+      !minInvestment ||
+      !duration ||
+      !returnType ||
+      !categoryId ||
+      withdrawalFee == null // Validar que withdrawalFee esté presente
+    ) {
       return res.status(400).json({ message: "Faltan datos requeridos" });
     }
 
-    const existingCategoy = await prisma.project.findUnique({
+    // Validar que el withdrawalFee sea un valor numérico válido entre 0 y 100
+    if (typeof withdrawalFee !== "number" || withdrawalFee < 0 || withdrawalFee > 100) {
+      return res.status(400).json({ message: "La comisión por retiro debe ser un porcentaje entre 0 y 100" });
+    }
+
+    // Verificar si el proyecto ya existe
+    const existingProject = await prisma.project.findUnique({
       where: { title },
     });
-    if (existingCategoy) {
-      return badRequest(res, "La proyecto ya está registrada");
+    if (existingProject) {
+      return res.status(400).json({ message: "El proyecto ya está registrado" });
     }
 
     // Validar tipo de retorno
@@ -34,7 +61,13 @@ const createproject = async (req, res) => {
     if (!existingCategory) {
       return res.status(404).json({ message: "Categoría no encontrada" });
     }
-    // Crear el proyecto
+
+    // Calcular el endDate
+    const currentDate = new Date();
+    const endDate = new Date(currentDate);
+    endDate.setDate(endDate.getDate() + duration); // Sumar duración en días
+
+    // Crear el proyecto con el nuevo campo withdrawalFee y endDate
     const project = await prisma.project.create({
       data: {
         title,
@@ -45,15 +78,19 @@ const createproject = async (req, res) => {
         returnType,
         fixedReturn: returnType === "fixed" ? fixedReturn : null,
         categoryId,
+        withdrawalFee, // Incluir el valor de withdrawalFee
+        endDate, // Agregar endDate calculado
       },
     });
 
-    return sendOk(res, "proyecto creado exitosamente.", project);
+    return sendOk(res, "Proyecto creado exitosamente.", project);
   } catch (error) {
-    return internalError(res, "A ocurrido un error con el servidor.");
+    console.error(error);
+    return internalError(res, "Ha ocurrido un error con el servidor.");
   }
 };
 
+//Lista todos los proyectos
 const getAllProjects = async (req, res) => {
   try {
     const projects = await prisma.project.findMany({
@@ -65,8 +102,10 @@ const getAllProjects = async (req, res) => {
         capacity: true,
         minInvestment: true,
         duration: true,
+        endDate: true,
         returnType: true,
         fixedReturn: true,
+        withdrawalFee: true,
         status: true,
         createdAt: true,
         category: {
@@ -106,8 +145,10 @@ const getProjectById = async (req, res) => {
         capacity: true,
         minInvestment: true,
         duration: true,
+        endDate: true,
         returnType: true,
         fixedReturn: true,
+        withdrawalFee: true,
         status: true,
         createdAt: true,
         category: {
@@ -120,7 +161,6 @@ const getProjectById = async (req, res) => {
       },
     });
 
-    console.log(project);
     if (project == null) {
       return error404(res, "El proyecto no existe.");
     }
@@ -133,7 +173,7 @@ const getProjectById = async (req, res) => {
 //Actualizar proyecto
 const updateProject = async (req, res) => {
   const projectId = req.params.projectId;
-  const { title, description, capacity, minInvestment, duration, returnType, fixedReturn, categoryId, status } = req.body;
+  const { title, description, capacity, minInvestment, duration, returnType, fixedReturn, categoryId, status, withdrawalFee } = req.body;
 
   try {
     // Validar el formato del ID
@@ -162,6 +202,13 @@ const updateProject = async (req, res) => {
       return badRequest(res, `Estado inválido. Los estados permitidos son: ${validStatuses.join(", ")}.`);
     }
 
+    // Validar withdrawalFee
+    if (withdrawalFee !== undefined) {
+      if (typeof withdrawalFee !== "number" || withdrawalFee < 0 || withdrawalFee > 100) {
+        return badRequest(res, "La comisión por retiro debe ser un porcentaje entre 0 y 100.");
+      }
+    }
+
     // Actualizar el proyecto
     const updatedProject = await prisma.project.update({
       where: { id: projectId },
@@ -175,6 +222,7 @@ const updateProject = async (req, res) => {
         ...(fixedReturn !== undefined && { fixedReturn }),
         ...(categoryId && { categoryId }),
         ...(status && { status }),
+        ...(withdrawalFee !== undefined && { withdrawalFee }), // Agregar el campo withdrawalFee
       },
     });
 
@@ -228,7 +276,7 @@ const deleteProject = async (req, res) => {
 };
 
 module.exports = {
-  createproject,
+  createProject,
   getAllProjects,
   getProjectById,
   updateProject,

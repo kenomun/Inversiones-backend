@@ -50,6 +50,7 @@ model Project {
   duration     Int          // Duración en días o meses
   returnType   String       // 'fixed' o 'variable'
   fixedReturn  Float?       // Porcentaje de ganancia (si es 'fixed')
+  withdrawalFee Float?
   categoryId   String
   category     Category     @relation(fields: [categoryId], references: [id])
   investments  Investment[]
@@ -58,6 +59,7 @@ model Project {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
+  endDate      DateTime?
 }
 
 
@@ -83,6 +85,7 @@ model InvestmentHistory {
   profitLoss      Float
   returnType      String?
   walletBalance   Float
+  fee             Float?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

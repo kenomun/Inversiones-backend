@@ -192,10 +192,10 @@ const getUserInvestmentsByUserId = async (req, res) => {
 
 // Retirarse de una inversión
 const withdrawInvestment = async (req, res) => {
-  console.log("API");
   const investmentId = req.params.investmentId;
-  const { amountToWithdraw } = req.body; // Monto de retiro proporcionado por el frontend
-  const userId = req.user.id; // ID del usuario extraído del token JWT
+  const { amountToWithdraw } = req.body;
+  const userId = req.user.id; // ID del usuario autenticado
+  const MAX_WITHDRAW_PERCENTAGE = 50; // Porcentaje máximo de retiro permitido
 
   try {
     // Validar formato del ID de inversión
@@ -205,7 +205,7 @@ const withdrawInvestment = async (req, res) => {
     }
 
     const result = await prisma.$transaction(async (prisma) => {
-      // Buscar la inversión y el usuario asociado a ella
+      // Buscar la inversión y validar su existencia
       const investment = await prisma.investment.findUnique({
         where: { id: investmentId },
         include: {
@@ -218,50 +218,62 @@ const withdrawInvestment = async (req, res) => {
         throw new Error("Inversión no encontrada.");
       }
 
-      // Validar que el usuario autenticado sea el mismo que el que hizo la inversión
+      // Validar que el usuario autenticado sea el propietario de la inversión
       if (investment.userId !== userId) {
         throw new Error("No tienes permiso para retirar esta inversión.");
       }
 
       const { amount, user, project } = investment;
 
-      // Verificar que el monto a retirar no sea mayor al monto invertido
-      if (amountToWithdraw <= 0 || amountToWithdraw > amount) {
-        throw new Error("El monto a retirar es inválido.");
+      // Obtener la comisión de retiro del proyecto
+      const withdrawalFeePercentage = project.withdrawalFee || 0; // Si no hay comisión, se usa 0
+
+      // Validar que el monto a retirar no exceda el porcentaje permitido
+      const maxWithdrawAmount = (MAX_WITHDRAW_PERCENTAGE / 100) * amount;
+      if (amountToWithdraw <= 0 || amountToWithdraw > maxWithdrawAmount) {
+        throw new Error(`El monto a retirar es inválido. Puedes retirar hasta el ${MAX_WITHDRAW_PERCENTAGE}% de tu inversión (${maxWithdrawAmount}).`);
       }
 
-      let profitLoss = 0;
+      // Calcular la comisión por retiro
+      const withdrawFee = amountToWithdraw * (withdrawalFeePercentage / 100);
 
-      // Calcular la ganancia o pérdida según el tipo de retorno
+      // Calcular la ganancia o pérdida
+      let profitLoss = 0;
       if (project.returnType === "fixed") {
-        // Ganancia fija
         profitLoss = amountToWithdraw * (project.fixedReturn / 100);
       } else if (project.returnType === "variable") {
-        // Ganancia/pérdida variable (simulada)
-        const profitLossRate = (Math.random() * 50 - 20) / 100; // Simulando entre -20% y +30%
+        const profitLossRate = (Math.random() * 50 - 20) / 100; // Simula entre -20% y +30%
         profitLoss = amountToWithdraw * profitLossRate;
       }
 
-      // Actualizar la billetera del usuario con el monto retirado + ganancia/pérdida
+      // Monto neto a transferir al usuario
+      const netAmount = amountToWithdraw - withdrawFee + profitLoss;
+
+      // Actualizar la billetera del usuario
       const updatedUser = await prisma.user.update({
         where: { id: user.id },
-        data: { wallet: user.wallet + amountToWithdraw + profitLoss },
+        data: {
+          wallet: user.wallet + netAmount,
+        },
       });
 
-      // Actualizar el proyecto (reduciendo el monto recaudado)
+      // Actualizar el monto recaudado del proyecto
       await prisma.project.update({
         where: { id: project.id },
-        data: { raisedAmount: project.raisedAmount - amountToWithdraw },
+        data: {
+          raisedAmount: project.raisedAmount - amountToWithdraw,
+        },
       });
 
-      // Si la inversión es parcialmente retirada, actualizamos el monto invertido
+      // Actualizar la inversión o eliminarla si el retiro es total
       if (amountToWithdraw < amount) {
         await prisma.investment.update({
           where: { id: investmentId },
-          data: { amount: amount - amountToWithdraw },
+          data: {
+            amount: amount - amountToWithdraw,
+          },
         });
       } else {
-        // Si el retiro es total, eliminamos la inversión
         await prisma.investment.delete({
           where: { id: investmentId },
         });
@@ -274,16 +286,22 @@ const withdrawInvestment = async (req, res) => {
           projectId: project.id,
           action: "withdrawal",
           amount: amountToWithdraw,
-          profitLoss: profitLoss,
+          profitLoss,
           walletBalance: updatedUser.wallet,
           returnType: project.returnType,
+          fee: withdrawFee,
         },
       });
 
-      return { user: updatedUser, project };
+      return { user: updatedUser, project, profitLoss, withdrawFee, netAmount };
     });
 
-    return sendOk(res, "Inversión retirada con éxito.", result);
+    return sendOk(res, "Inversión retirada con éxito.", {
+      message: `Has retirado $${amountToWithdraw.toFixed(2)} con una comisión de $${result.withdrawFee.toFixed(2)}. Tu ganancia/pérdida es de $${result.profitLoss.toFixed(
+        2
+      )} y el monto neto transferido es $${result.netAmount.toFixed(2)}.`,
+      result,
+    });
   } catch (error) {
     console.error(error);
     return internalError(res, error.message || "Hubo un error al retirar la inversión.");
