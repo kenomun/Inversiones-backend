@@ -1,4 +1,4 @@
-# Plataforma de Inversiones
+# Plataforma de Inversiones (backend)
 
 ## Descripción
 
@@ -36,25 +36,11 @@ src/
 ├── config/         # Configuraciones de la aplicación
 ├── controllers/    # Lógica para manejar solicitudes HTTP
 ├── middlewares/    # Middlewares personalizados
-├── models/         # Modelos Prisma (esquema generado)
+├── prisma/         # Esquema y migraciones de la base de datos
 ├── routes/         # Definición de rutas de la API
-└── services/       # Servicios para lógica de negocio
+├── services/       # Servicios para lógica de negocio
+└── jobs/           # Tareas programadas (cron jobs)
 ```
-
-### Frontend
-
-El proyecto utiliza **Vue.js** con **Vue Router** y **Vuex/Pinia**. La estructura es:
-
-```
-src/
-├── components/     # Componentes reutilizables
-├── views/          # Vistas principales de la aplicación
-├── store/          # Manejo del estado global
-├── router/         # Configuración de rutas
-└── assets/         # Recursos estáticos como imágenes y estilos
-```
-
----
 
 ## Funcionalidades principales
 
@@ -162,7 +148,7 @@ El proyecto utiliza **Prisma** para manejar la base de datos PostgreSQL. Las tab
    npx prisma migrate dev --name init
    ```
 
-5. Ejecutar en la carpeta prisma archivo seed que agregara información a la base de datos.
+5. Ejecutar en la carpeta prisma archivo seed que agregara información a la base de datos (los roles al modelo de roles (superadmin, admin, user)).
 
 ```bash
    node seed.js
